@@ -1,0 +1,280 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>スライム オンライン (テスト)</title>
+<style>
+html,body{margin:0;height:100%;background:#1a1a22;overflow:hidden;font-family:system-ui,"Hiragino Sans",sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+canvas#c{display:block;image-rendering:pixelated;width:100vw;height:100vh}
+.btn{background:rgba(30,30,45,.85);border:2px solid #9a8cff;color:#fff;border-radius:10px;padding:8px 12px;font-size:15px;font-weight:bold}
+#hud{position:fixed;left:8px;top:8px;font-size:13px;text-shadow:0 1px 2px #000;pointer-events:none}
+#topbtns{position:fixed;right:8px;top:8px;display:flex;gap:6px}
+#mis{background:transparent;border:0;border-radius:0;border-style:solid;border-width:28px 24px;border-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABAklEQVR4nGNkwAISbFT+YxMnBBYcucOILsaCzfCmljQGARkVkgz/8OQOA0PNrP/olqBYADP8yY1bDAIyKgy8shZEGf74+BKGJzduMaTFODAwMDCgWILhgyc3bjGYhmYwnF49g0HHhTjXP7lxi0HHxYvhyp5tGHIYFjAwMDAsrC9j0NJRgnibCHDtyj2Ga1emYJVDsQDqtf82BnJwl5ECjlx4hBHRGLHOwACJi0kLuoj2AQMDA0NdzSziUhEMwCKYU1AOr8Hf3z/CK89ElPMoAKMWjFowagGenPznyzMGBgbCOZUQwPABrE4g1eCmljSsNeFohcPAwDBYKxySTEZ1IAoAANb0joMCyWt4AAAAAElFTkSuQmCC) 7 6 fill / 28px 24px stretch;image-rendering:pixelated;color:#4a2c14;padding:6px 10px;min-width:260px}#mis h3{color:#6b2a10;margin:0 0 6px}#mis .btn{background:#8a5a2b;color:#fff3d6;border-color:#5a3412}
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(25,22,40,.95);border:2px solid #9a8cff;border-radius:12px;padding:14px;min-width:240px;display:none;z-index:5}
+.panel h3{margin:0 0 8px}
+#toast{position:fixed;left:50%;top:18%;transform:translateX(-50%);background:#f5c542;color:#332;padding:8px 16px;border-radius:10px;font-weight:bold;display:none;z-index:6}
+#pad{position:fixed;left:20px;bottom:20px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.25)}
+#knob{position:absolute;left:40px;top:40px;width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.35)}
+#abtns{position:fixed;right:20px;bottom:150px;display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+#abtns .btn{width:92px;height:56px;font-size:14px}
+#start{position:fixed;inset:0;background:#1d1830;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:10}
+#swatches{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:360px}
+#swatches canvas{width:72px;height:72px;image-rendering:pixelated;border:3px solid transparent;border-radius:10px;background:#3a5a2a}
+#swatches canvas.sel,#lashSw canvas.sel{border-color:#ffd84a}
+#lashSw{display:flex;gap:8px;justify-content:center}#lashSw canvas{width:72px;height:72px;image-rendering:pixelated;border:3px solid transparent;border-radius:10px;background:#3a5a2a;cursor:pointer}
+input{font-size:16px;padding:6px;border-radius:8px;border:none;width:180px;text-align:center}
+.ms{margin:4px 0}.done{color:#8f8;text-decoration:line-through}
+#atk{position:fixed;right:calc(28px + env(safe-area-inset-right));bottom:calc(34px + env(safe-area-inset-bottom));width:96px;height:96px;border-radius:50%;touch-action:none;background:radial-gradient(circle at 40% 35%,#c58bff,#7b2fd1);border:3px solid rgba(255,255,255,.7);color:#fff;font-weight:bold;font-size:14px;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.5);overflow:hidden}
+#atk span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-shadow:0 1px 2px #000}
+#atkCd{position:absolute;inset:0;border-radius:50%}#atk.pressed{transform:scale(.93)}
+*{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}button,#atk,#pad,canvas{touch-action:none}input{-webkit-user-select:text;user-select:text;touch-action:manipulation}
+</style></head><body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="topbtns"><button class="btn" id="bInv">もちもの</button><button class="btn" id="bMis">ミッション</button></div>
+<div id="pad"><div id="knob"></div></div>
+<div id="abtns"><button class="btn" id="bEat">たべる</button></div>
+<div class="panel" id="inv"><h3>もちもの</h3><div id="invList"></div><div style="margin-top:10px;display:flex;gap:6px"><button class="btn" id="invEat">キノコを食べる</button><button class="btn" id="invClose">とじる</button></div></div>
+<div class="panel" id="mis"><h3>ミッション</h3><div id="misList"></div><button class="btn" id="misClose" style="margin-top:10px">とじる</button></div>
+<div id="toast"></div><button id="muteB" style="position:fixed;right:10px;top:58px;z-index:50;font-size:18px;width:40px;height:40px;border-radius:50%;border:2px solid rgba(255,255,255,.4);background:rgba(0,0,0,.45);color:#fff">🔊</button>
+<div id="atk"><div id="atkCd"></div><span>スラ<br>アタック</span></div>
+<div id="start"><h2 style="margin:0">スライム オンライン <small>(テスト版)</small></h2>
+<canvas id="selPrev" width="24" height="24" style="width:120px;height:120px;image-rendering:pixelated"></canvas><div>いろをえらんでね</div><div id="swatches"></div><div>まつ毛</div><div id="lashSw"></div>
+<input id="nameIn" maxlength="10" placeholder="なまえ"><button class="btn" id="bStart" style="font-size:18px;padding:10px 30px">スタート</button>
+<div style="font-size:12px;opacity:.7;max-width:320px;text-align:center">移動: WASD/矢印・左下パッド　スラアタック: Space/J　食べる: E　もちもの: I　ミッション: M</div></div>
+<script src="assets.js"></script>
+<script src="https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js"></script>
+<script>
+"use strict";
+// ★ 草タイル差し替え: TILE_GRASS に画像URL(24x24 PNG)を入れるか assets.js の t_grass_base を差し替え
+const TILE_GRASS=null,TILE_DIRT=null;
+const TS=24,COLORS=[{n:"むらさき",h:0},{n:"あお",h:-60},{n:"みどり",h:-150},{n:"きいろ",h:140},{n:"ピンク",h:60},{n:"オレンジ",h:105}];
+const IMG={};
+function loadAll(){return Promise.all(Object.entries(ASSETS).map(([k,v])=>new Promise(r=>{const i=new Image();i.onload=()=>{IMG[k]=i;r()};i.onerror=r;i.src=v})))}
+// ---- SFX (WebAudio synth, no files) ----
+let AC=null,MUTE=localStorage.slimeMute==="1";const VOL=.18;
+function auInit(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume()}
+["pointerdown","touchstart","keydown"].forEach(ev=>addEventListener(ev,auInit,{passive:true}));
+function tn(f,d,type,v,f2,dl){if(!AC||MUTE)return;const t=AC.currentTime+(dl||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime((v||1)*VOL,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}
+function nz(d,v,dl){if(!AC||MUTE)return;const t=AC.currentTime+(dl||0),b=AC.createBuffer(1,AC.sampleRate*d|0,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);const s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;g.gain.value=(v||1)*VOL;s.connect(g).connect(AC.destination);s.start(t)}
+const SND={
+ attack:()=>{tn(220,.12,"triangle",.8,520)},
+ hit:()=>{tn(180,.08,"square",.6,90);nz(.06,.5)},
+ defeat:()=>{[523,659,784].forEach((f,i)=>tn(f,.12,"square",.5,0,i*.07))},
+ pickup:()=>{tn(880,.07,"square",.45);tn(1320,.1,"square",.45,0,.06)},
+ eat:()=>{tn(300,.07,"triangle",.8,200);tn(320,.07,"triangle",.8,210,.11)},
+ damage:()=>{tn(400,.18,"sawtooth",.45,120);nz(.1,.4)},
+ faint:()=>{tn(500,.6,"triangle",.7,80)},
+ select:()=>{tn(660,.06,"square",.35)},
+ start:()=>{tn(523,.08,"square",.4);tn(784,.12,"square",.4,0,.08)},
+ area:()=>{tn(392,.15,"triangle",.6,0);tn(523,.15,"triangle",.6,0,.12);tn(659,.2,"triangle",.6,0,.24)},
+ mission:()=>{[523,659,784,1047].forEach((f,i)=>tn(f,.16,"square",.45,0,i*.09))},
+ empty:()=>{tn(150,.12,"square",.35)}};
+// ---- hue shift ----
+function rgb2hsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0,l=(mx+mn)/2;if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);h=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;h*=60}return[h,s,l]}
+function hsl2rgb(h,s,l){h=((h%360)+360)%360/360;if(!s)return[l*255,l*255,l*255];const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;const f=t=>{t<0&&(t+=1);t>1&&(t-=1);return t<1/6?p+(q-p)*6*t:t<1/2?q:t<2/3?p+(q-p)*(2/3-t)*6:p};return[f(h+1/3)*255,f(h)*255,f(h-1/3)*255]}
+const hueCache={};// body-purple colours only: cheeks(#fd8484), eyes, outline(#60477e/#684d8a), whites stay fixed
+const OUTL=new Set([0x60477e,0x684d8a]);// outline + mouth: darker shade of the variant colour
+const BODY=new Set([0x7256b3,0x8765c8,0x9d75dd,0xb486f2,0xc99afe,0xdcafff,0xc08ffd,0xaa7fe1,0xd0acfd,0xab7ee1,0x966fc6,0xae82e6,0xeadbfd]);
+function slimeImg(key,hue){if(!hue)return IMG[key];const ck=key+"|"+hue;if(hueCache[ck])return hueCache[ck];const s=IMG[key],c=document.createElement("canvas");c.width=s.width;c.height=s.height;const x=c.getContext("2d");x.drawImage(s,0,0);const d=x.getImageData(0,0,c.width,c.height),a=d.data;
+for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;const[h,sa,l]=rgb2hsl(a[i],a[i+1],a[i+2]);const cv=(a[i]<<16|a[i+1]<<8|a[i+2]);let r,g,b;if(BODY.has(cv))[r,g,b]=hsl2rgb(h+hue,sa*.78,l+(1-l)*.14);else if(OUTL.has(cv))[r,g,b]=hsl2rgb(h+hue,sa*.8,l*.95);else continue;a[i]=r;a[i+1]=g;a[i+2]=b}x.putImageData(d,0,0);return hueCache[ck]=c}
+// ---- utils ----
+const rnd=(a,b)=>a+Math.random()*(b-a),dist=(a,b,c,d)=>Math.hypot(a-c,b-d),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function mulberry(s){return()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");let SC=3,VW=300,VH=200;
+function resize(){const w=innerWidth,h=innerHeight,dpr=devicePixelRatio||1;SC=Math.max(2,Math.round(Math.min(w,h)*dpr/190));cv.width=Math.floor(w*dpr);cv.height=Math.floor(h*dpr);VW=Math.ceil(cv.width/SC);VH=Math.ceil(cv.height/SC)}
+addEventListener("resize",resize);resize();
+// ---- areas ----
+const AW=36,AH=26;
+function makeArea(id){if(id===2){const W=AW*TS,H=AH*TS;return{id:2,name:"ダンジョン(中ボス)",tile:"t_dungeon",deco:[],stumps:[],rocks:[],flowers:[],cats:[],exits:[{x:W-14,y:H/2-36,w:14,h:72,to:0,sx:30,sy:H/2,label:"草原 →"}]}}
+ const R=mulberry(id*999+7),A={id,name:id===0?"草原":"土のエリア",tile:id===0?"grass_tile":"dirt_tile",deco:[],stumps:[],rocks:[],flowers:[],cats:[],exits:[]};
+ const W=AW*TS,H=AH*TS,occ=[];const free=(x,y,r)=>x>60&&x<W-60&&y>60&&y<H-60&&dist(x,y,W/2,H/2)>70&&occ.every(o=>dist(o.x,o.y,x,y)>o.r+r);
+ const place=(r)=>{for(let i=0;i<300;i++){const x=40+R()*(W-80),y=40+R()*(H-80);if(free(x,y,r)){occ.push({x,y,r});return{x:Math.round(x),y:Math.round(y)}}}return null};
+ if(id===0)for(let i=0;i<7;i++){const p=place(40);if(p)A.stumps.push({...p,img:id===0?"stump":"stump_darkoak",mush:true,t:0,kind:["mushroom_red","mushroom_brown","mushroom_blue"][Math.floor(R()*3)],side:R()<.5?-1:1})}
+ for(let i=0;i<(id===0?4:14);i++){const p=place(18);if(p)A.rocks.push({...p,img:R()<.5?"rock_M":"rock_S"})}
+ if(id===0){ // 花の群生: clumps grouped around a few patch centres (flowers.py method)
+  for(let g=0;g<6;g++){const cx=60+R()*(W-120),cy=60+R()*(H-120),n=2+Math.floor(R()*4);
+   for(let k=0;k<n;k++){const big=R()<.45,a=R()*6.28,rr=R()*(big?26:34);A.flowers.push({x:Math.round(cx+Math.cos(a)*rr),y:Math.round(cy+Math.sin(a)*rr),big,ph:Math.floor(R()*4),v:1})}}
+  A.tufts=[];const okT=(x,y)=>x>20&&x<W-50&&y>20&&y<H-10&&!(x>W-70&&Math.abs(y-H/2)<60)&&A.stumps.every(s=>dist(x,y,s.x,s.y)>34)&&A.rocks.every(r=>dist(x,y,r.x,r.y)>22);
+  for(let g=0;g<12;g++){const cx=40+R()*(W-80),cy=40+R()*(H-80),n=3+Math.floor(R()*5);for(let k=0;k<n;k++){const a=R()*6.28,rr=4+R()*26,x=Math.round(cx+Math.cos(a)*rr),y=Math.round(cy+Math.sin(a)*rr*.7);if(okT(x,y)&&A.tufts.every(t=>dist(t.x,t.y,x,y)>9))A.tufts.push({x,y,ph:Math.floor(R()*4)})}}
+ }else{for(let i=0;i<30;i++){const x=Math.floor(R()*W)+12,y=Math.floor(R()*H)+14;if(x>24&&x<W-24&&y>24&&y<H-12&&dist(x,y,W/2,H/2)>70&&!(x<60&&Math.abs(y-H/2)<60)&&A.rocks.every(r=>dist(x,y,r.x,r.y)>(r.img==="rock_M"?34:24)))A.rocks.push({x,y,img:"rock_S"})}}
+ A.exits.push(id===0?{x:W-14,y:H/2-36,w:14,h:72,to:1,sx:30,sy:H/2,label:"→ 土のエリア"}:{x:0,y:H/2-36,w:14,h:72,to:0,sx:W-30,sy:H/2,label:"草原 ←"});
+ if(id===0)A.exits.push({x:0,y:H/2-36,w:14,h:72,to:2,sx:W-30,sy:H/2,label:"← ダンジョン"});
+ if(id===0)for(let i=0;i<3;i++)A.cats.push(makeCat(A));
+ return A}
+function makeBoss(){const x=AW*TS*.33,y=AH*TS/2,tr=[];for(let i=0;i<90;i++)tr.push({x:x+i*.0,y});return{boss:1,pf:"boss_",idx:[0,13,26,39,52,65],kinds:[0,1,2,1,2,3],hr:16,br:15,x,y,ang:0,trail:tr,hp:12,max:12,st:"wander",t:2,hit:0,dead:0,resp:1e9,bob:0}}
+let B=null,bsIn=null,bsT=0;
+const PARTY_ALL=true; // everyone in one forced party -> others drawn opaque. set false to go back to semi-transparent
+const OTHER_A=PARTY_ALL?1:.5;
+function areaHost(a){const now=performance.now();return!Object.values(others).some(o=>o.area===a&&o.id<myId&&now-o.seen<3000)}
+let csIn=null,csT=0,csTick=0;const CST=["wander","aim","charge","rest"];
+function syncCats(dt){const A=areas[0],now=performance.now(),rem=cur.id===0&&csIn&&now-csT<1500&&!areaHost(0);
+ A.cats.forEach((c,i)=>{const s=csIn&&csIn[i];
+  if(rem&&s){const T=s[0];const snap=!c.remote||!c.rp||c.rp.length!==T.length||c.dead!==s[3];c.remote=1;c.hp=s[2];c.dead=s[3];c.ang=s[1];c.st=CST[s[4]]||"wander";
+   if(snap)c.rp=T.map(q=>[q[0],q[1]]);else{const f=1-Math.exp(-dt*10);c.rp.forEach((q,k)=>{q[0]+=(T[k][0]-q[0])*f;q[1]+=(T[k][1]-q[1])*f})}c.x=c.rp[0][0];c.y=c.rp[0][1]}
+  else if(c.remote){c.remote=0;if(c.rp){const idx=c.idx||[0,9,18,27],R=c.rp;for(let t=0;t<c.trail.length;t++){let k=0;while(k<idx.length-2&&t>idx[k+1])k++;const f=Math.min(1,(t-idx[k])/(idx[k+1]-idx[k]));c.trail[t]={x:R[k][0]+(R[k+1][0]-R[k][0])*f,y:R[k][1]+(R[k+1][1]-R[k][1])*f}}c.x=R[0][0];c.y=R[0][1];c.rp=null}}})}
+function bossHost(){const now=performance.now();return!Object.values(others).some(o=>o.area===2&&o.id<myId&&now-o.seen<3000)}
+function makeCat(A){let x,y;do{x=rnd(80,AW*TS-80);y=rnd(80,AH*TS-80)}while(dist(x,y,AW*TS/2,AH*TS/2)<120);const tr=[];for(let i=0;i<40;i++)tr.push({x,y});return{x,y,ang:rnd(0,6.28),trail:tr,hp:3,st:"wander",t:rnd(1,3),hit:0,dead:0,resp:0,bob:0}}
+// ---- state ----
+let areas,P,cur,started=false,keys={},joy={x:0,y:0},inv={mush:0},stats={got:0,eat:0,kill:0,visit2:0},emoteMine=null;
+const MISSIONS=[{t:"キノコを5こ集める",k:"got",n:5},{t:"キノコを3こ食べてぽっちゃりに",k:"eat",n:3},{t:"イモムシを2ひき倒す",k:"kill",n:2},{t:"土のエリアへ行く",k:"visit2",n:1}];const mDone=[];
+let myName="スライム",myHue=0,myLash=true,myId=Math.random().toString(36).slice(2,10),fx=[],texts=[];
+function stageOf(w){return w>=6?"superplump":w>=3?"plump":"normal"}
+const SPD={normal:62,plump:48,superplump:26},ACD={normal:.55,plump:.8,superplump:1.8};
+function newPlayer(){return{x:AW*TS/2,y:AH*TS/2,dir:"front",face:1,moving:false,anim:0,weight:0,hp:5,inv:0,dash:0,dvx:0,dvy:0,cd:0,blink:2,faint:0}}
+// ---- input ----
+addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;keys[e.code]=1;if(!started)return;if(e.code==="Space"||e.code==="KeyJ")attack();if(e.code==="KeyE")eat();if(e.code==="KeyI")toggle("inv");if(e.code==="KeyM")toggle("mis");if(e.code.startsWith("Arrow")||e.code==="Space")e.preventDefault()});
+addEventListener("keyup",e=>keys[e.code]=0);
+const pad=document.getElementById("pad"),knob=document.getElementById("knob");let padId=null;
+function padMove(e){const r=pad.getBoundingClientRect();let dx=e.clientX-r.left-65,dy=e.clientY-r.top-65;const m=Math.hypot(dx,dy);if(m>50){dx*=50/m;dy*=50/m}knob.style.left=40+dx+"px";knob.style.top=40+dy+"px";joy.x=Math.abs(dx)>12?dx/50:0;joy.y=Math.abs(dy)>12?dy/50:0}
+pad.addEventListener("pointerdown",e=>{padId=e.pointerId;pad.setPointerCapture(e.pointerId);padMove(e)});pad.addEventListener("pointermove",e=>{if(e.pointerId===padId)padMove(e)});
+const padEnd=e=>{if(e.pointerId!==padId)return;padId=null;joy.x=joy.y=0;knob.style.left=knob.style.top="40px"};pad.addEventListener("pointerup",padEnd);pad.addEventListener("pointercancel",padEnd);
+const $=id=>document.getElementById(id);
+const atkEl=$("atk");atkEl.addEventListener("pointerdown",e=>{e.preventDefault();atkEl.classList.add("pressed");attack()});["pointerup","pointercancel","pointerleave"].forEach(v=>atkEl.addEventListener(v,()=>atkEl.classList.remove("pressed")));$("bEat").onpointerdown=e=>{e.preventDefault();eat()};
+$("bInv").onclick=()=>toggle("inv");$("bMis").onclick=()=>toggle("mis");$("invClose").onclick=()=>toggle("inv");$("misClose").onclick=()=>toggle("mis");$("invEat").onclick=()=>{eat();renderPanels()};
+function toggle(id){const el=$(id),o=el.style.display==="block";$("inv").style.display=$("mis").style.display="none";if(!o){el.style.display="block";renderPanels()}}
+cv.addEventListener("pointerdown",e=>{if(!started)return;const dpr=devicePixelRatio||1,wx=e.clientX*dpr/SC+cam.x,wy=e.clientY*dpr/SC+cam.y;for(const s of cur.stumps){const m=mushPos(s);if(s.mush&&dist(wx,wy,m.x,m.y-6)<14&&dist(P.x,P.y,m.x,m.y)<60){collect(s);return}}});
+// iOS Safari: block double-tap / pinch zoom
+["gesturestart","gesturechange","gestureend","dblclick"].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault(),{passive:false}));
+let lastTouch=0;document.addEventListener("touchend",e=>{const n=Date.now();if(n-lastTouch<350&&e.target.tagName!=="INPUT")e.preventDefault();lastTouch=n},{passive:false});
+document.addEventListener("touchmove",e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+["atk","pad","bEat","bInv","bMis","invEat","invClose","misClose"].forEach(id=>{const el=$(id);["touchstart","touchend"].forEach(ev=>el.addEventListener(ev,e=>{e.preventDefault();if(ev==="touchend"&&el.tagName==="BUTTON"&&id!=="bEat")el.click()},{passive:false}))});
+// ---- gameplay ----
+function mushPos(s){return{x:s.x,y:s.y+14}} // in front of (below) the stump
+function collect(s,byBot){s.mush=false;s.t=rnd(20,30);if(byBot)return;inv.mush++;stats.got++;SND.pickup();addText("+キノコ",P.x,P.y-20,"#ffe27a");checkM()}
+function eat(){if(P.faint>0)return;if(inv.mush<=0){toast("キノコがないよ");SND.empty();return}inv.mush--;stats.eat++;SND.eat();const before=stageOf(P.weight);P.weight=Math.min(10,P.weight+1.2);P.hp=Math.min(5,P.hp+1);const st=stageOf(P.weight);addText("もぐもぐ♪",P.x,P.y-22,"#fff");if(st!==before)toast(st==="plump"?"ぽっちゃりになった！":"超ぽっちゃりになった！ (おそい…)");checkM();renderPanels()}
+function attack(){if(P.faint>0||P.cd>0||P.dash>0)return;const v=DIRV[P.d8];P.dash=.22;SND.attack();atkFx(P,myHue);P.dvx=v[0];P.dvy=v[1];P.cd=ACD[stageOf(P.weight)]}
+const DIRV=[[1,0],[.707,.707],[0,1],[-.707,.707],[-1,0],[-.707,-.707],[0,-1],[.707,-.707]];
+function solids(A){return[...A.stumps.map(s=>({x:s.x,y:s.y+4,r:13})),...A.rocks.map(r=>r.img==="rock_M"?{x:r.x,y:r.y-9,r:15,ry:6}:{x:r.x-.5,y:r.y-1,r:9.5,ry:5.5})]} // big rock: ellipse on its base (can walk behind); small stone: ellipse covering the whole stone (no walking behind)
+function collide(o,r){for(const s of solids(cur)){if(s.ry){const ax=s.r+r,ay=s.ry+r*.6,nx=(o.x-s.x)/ax,ny=(o.y-s.y)/ay,n=Math.hypot(nx,ny);if(n<1&&n>0){o.x=s.x+nx/n*ax;o.y=s.y+ny/n*ay}continue}const d=dist(o.x,o.y,s.x,s.y),m=s.r+r;if(d<m&&d>0){o.x=s.x+(o.x-s.x)/d*m;o.y=s.y+(o.y-s.y)/d*m}}o.x=clamp(o.x,8,AW*TS-8);o.y=clamp(o.y,10,AH*TS-6)}
+function catParts(c){if(c.rp)return c.rp.map((q,k)=>({x:q[0],y:q[1],k}));const idx=c.idx||[0,9,18,27];return idx.map((i,k)=>({x:c.trail[i].x,y:c.trail[i].y,k}))}
+function update(dt){
+ if(P.faint>0){P.faint-=dt;if(P.faint<=0){P.faint=0;P.dash=0;P.cd=0;P.dvx=P.dvy=0;P.hp=5;P.x=AW*TS/2;P.y=AH*TS/2;P.inv=2;camF.snap=1}}
+ let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x,iy=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y;
+ if(P.faint>0)ix=iy=0;const m=Math.hypot(ix,iy);const st=stageOf(P.weight);
+ P.cd=Math.max(0,P.cd-dt);P.inv=Math.max(0,P.inv-dt);P.weight=Math.max(0,P.weight-dt/14);
+ if(P.dash>0){P.dash-=dt;P.x+=P.dvx*SPD[st]*3.2*dt;P.y+=P.dvy*SPD[st]*3.2*dt;P.moving=true}
+ else if(m>.1){const a=Math.atan2(iy,ix);P.d8=((Math.round(a/(Math.PI/4))%8)+8)%8;const sp=SPD[st]*Math.min(1,m);P.x+=Math.cos(a)*sp*dt;P.y+=Math.sin(a)*sp*dt;P.moving=true}else P.moving=false;
+ if(P.d8===undefined)P.d8=2;P.dir=[ "right","right","front","left","left","left","back","right"][P.d8];
+ P.anim+=dt*(P.moving?(st==="superplump"?7:10):0);P.blink-=dt;if(P.blink<-.15)P.blink=rnd(2,4);
+ collide(P,8);
+ for(const s of cur.stumps){if(s.mush){const mp=mushPos(s);if(dist(P.x,P.y,mp.x,mp.y)<17&&!(P.faint>0))collect(s)}}
+ for(const A of areas)for(const s of A.stumps)if(!s.mush){s.t-=dt;if(s.t<=0)s.mush=true}
+ for(const e of cur.exits)if(P.x>e.x-4&&P.x<e.x+e.w+4&&P.y>e.y&&P.y<e.y+e.h){cur=areas[e.to];SND.area();if(e.to===2&&(!B||B.dead)&&bossHost())B=makeBoss();P.x=e.sx;P.y=e.sy;camF.snap=1;if(e.to===1)stats.visit2=1;toast("エリア: "+cur.name);checkM();break}
+ syncCats(dt);for(const A of areas)for(const c of A.cats)updCat(c,A,dt);
+ if(cur.id===2&&B){const fresh=bsIn&&performance.now()-bsT<1500&&!bossHost();B.remote=fresh;if(fresh){B.rp=bsIn.p;B.ang=bsIn.a;B.hp=bsIn.hp;B.dead=bsIn.d;B.st=bsIn.st;B.bob+=dt*6}else if(B.rp){B.rp=null}updCat(B,areas[2],dt)}else if(cur.id===2&&!B&&bsIn){B=makeBoss()}
+ updSani(dt);
+ for(const t of texts){t.y-=14*dt;t.life-=dt}texts=texts.filter(t=>t.life>0);
+}
+function updCat(c,A,dt){
+ if(c.dead){if(c.remote)return;c.resp-=dt;if(c.resp<=0)Object.assign(c,makeCat(A));return}
+ c.hit=Math.max(0,c.hit-dt);if(c.agg)c.agg.t-=dt;c.bob+=dt*6;c.t-=dt;const here=A===cur&&!(P.faint>0);let tg=here?P:null,dp=here?dist(c.x,c.y,P.x,P.y):1e9;if(!c.remote)for(const k in others){const o=others[k];if(o.area!==A.id)continue;const d=dist(c.x,c.y,o.rx??o.x,o.ry??o.y);if(d<dp){dp=d;tg={x:o.rx??o.x,y:o.ry??o.y}}}let sp=c.boss?18:14;
+ if(c.st==="wander"){c.ang+=rnd(-1.5,1.5)*dt;if(c.t<0){c.t=rnd(1,3);c.ang+=rnd(-1,1)}if(dp<(c.boss?100:65)){c.st="aim";c.t=c.boss?.35:.6}}
+ else if(c.st==="aim"){sp=0;if(c.agg&&c.agg.t>0)tg=c.agg;if(tg)c.ang=Math.atan2(tg.y-c.y,tg.x-c.x);if(c.t<0){c.st="charge";c.t=1.1}}
+ else if(c.st==="charge"){sp=c.boss?60:50;if(c.t<0){c.st="rest";c.t=c.boss?.8:1.5}}
+ else if(c.st==="rest"){sp=6;if(c.t<0)c.st="wander"}
+ if(c.remote)sp=0;const nx=c.x+Math.cos(c.ang)*sp*dt,ny=c.y+Math.sin(c.ang)*sp*dt;
+ if(nx<30||nx>AW*TS-30)c.ang=Math.PI-c.ang;if(ny<30||ny>AH*TS-30)c.ang=-c.ang;
+ const o={x:nx,y:ny};if(A===cur)collide(o,6);if(sp>0){c.x=o.x;c.y=o.y;const l=c.trail[0];if(dist(l.x,l.y,c.x,c.y)>=1){c.trail.unshift({x:c.x,y:c.y});c.trail.length=c.boss?90:40}}
+ if(!here)return;
+ const parts=catParts(c);
+ if(P.dash>0){for(const p of parts){if(dist(p.x,p.y,P.x,P.y)<(c.hr||14)){if(p.k===0){if(c.hit<=0){addText("カキン!",p.x,p.y-14,"#ccc",.7);P.dash=0;P.x-=P.dvx*10;P.y-=P.dvy*10;c.hit=.3}}else if(c.hit<=0){if(c.remote){if(c.boss)sendNet({id:myId,bhit:1});else{sendNet({id:myId,chit:A.cats.indexOf(c),area:A.id});c.hp--}}else c.hp--;c.hit=.4;SND.hit();addText("-1",p.x,p.y-14,"#f88",.7);if(c.boss){if(!c.remote){c.agg={x:P.x,y:P.y,t:2};c.st="aim";c.t=.25}}else{c.st="rest";c.t=.8}if((!c.remote||!c.boss)&&c.hp<=0){c.dead=1;c.resp=c.boss?1e9:18;if(c.boss)toast("中ボスをたおした！");SND.defeat();stats.kill++;checkM()}}break}}}
+ else if(P.inv<=0&&dist(parts[0].x,parts[0].y,P.x,P.y)<(c.br||12)){P.hp--;P.inv=1.2;SND.damage();addText("ガブッ! -1",P.x,P.y-22,"#f66",.8);const a=Math.atan2(P.y-c.y,P.x-c.x);P.x+=Math.cos(a)*14;P.y+=Math.sin(a)*14;if(P.hp<=0){P.faint=2.5;SND.faint();toast("やられた… (キノコを1こ落とした)");inv.mush=Math.max(0,inv.mush-1)}}
+}
+// ---- Sani bot ----
+const sani={name:"サニ",hue:60,lash:true,x:AW*TS/2+60,y:AH*TS/2+30,area:0,d8:2,moving:false,anim:0,weight:0,target:null,wait:0,emote:null,et:0,blink:2};
+const EMO=["♪","!","♡","…zz","わーい","?"];
+function updSani(dt){for(const k in others){const o=others[k];o.blink=(o.blink??2)-dt;if(o.blink<-.15)o.blink=rnd(2,4)}const s=sani,A=areas[s.area];s.weight=Math.max(0,s.weight-dt/14);s.blink-=dt;if(s.blink<-.15)s.blink=rnd(2,4);s.et-=dt;if(s.et<=0)s.emote=null;if(Math.random()<dt/9){s.emote=EMO[Math.floor(Math.random()*EMO.length)];s.et=2}
+ if(s.wait>0){s.wait-=dt;s.moving=false;return}
+ if(!s.target){const ms=A.stumps.filter(t=>t.mush);if(ms.length&&Math.random()<.7){const t=ms[Math.floor(Math.random()*ms.length)];const p=mushPos(t);s.target={x:p.x,y:p.y,stump:t}}else s.target={x:rnd(60,AW*TS-60),y:rnd(60,AH*TS-60)}}
+ const t=s.target,d=dist(s.x,s.y,t.x,t.y);if(d<4){if(t.stump&&t.stump.mush){collect(t.stump,true);s.weight=Math.min(10,s.weight+1.2);s.emote="もぐもぐ";s.et=1.5}s.target=null;s.wait=rnd(.5,2.5);return}
+ const a=Math.atan2(t.y-s.y,t.x-s.x),sp=SPD[stageOf(s.weight)]*.8;s.x+=Math.cos(a)*sp*dt;s.y+=Math.sin(a)*sp*dt;s.d8=((Math.round(a/(Math.PI/4))%8)+8)%8;s.moving=true;s.anim+=dt*9}
+// ---- missions/ui ----
+function checkM(){MISSIONS.forEach((m,i)=>{if(!mDone[i]&&stats[m.k]>=m.n){mDone[i]=1;SND.mission();toast("ミッション達成！ "+m.t)}});renderPanels()}
+let toastT;function toast(s){const t=$("toast");t.textContent=s;t.style.display="block";clearTimeout(toastT);toastT=setTimeout(()=>t.style.display="none",2200)}
+const HEART_F="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAYAAAArzdW1AAAAg0lEQVR4nG2PsQ3CQBAEx1/BFUB0cuACHFDDlUFRDl+OXYALoAoC5NgQIAfkS/SWeZhwNCvdARDmCnNx4MuFuTSM0jDuMsy19qG1D4W5Ulk+8kRuO8Jcue0AuK4vAFIJCnUAkOZtaS732/GcPRjfT+ZtaRLAMawDasJc0+n88+nfsHYfasRDuFuU/RgAAAAASUVORK5CYII=",HEART_E="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAICAYAAAArzdW1AAAAg0lEQVR4nG3QMQoDIRBA0T9iFVJYypaSM4ScwQN7hpATbLFYbLFYpLBYUgVMk5WJ5JfDGxgFILrQogsNlZ5JdKFdrjcAlsedVLNEF9rbTwDYsmGPzXldwU9E6OC5VzxgOvimwZFJNYstmz6nA7+/SDWLAdBwBAAyvqicTz/gb+NXAHwApYRAEidHoZMAAAAASUVORK5CYII=";const hImg=s=>`<img src="${s}" style="width:18px;height:16px;image-rendering:pixelated;vertical-align:-2px;margin-right:1px">`;
+function renderPanels(){$("invList").innerHTML=`<div>🍄 キノコ × ${inv.mush}</div><div style="font-size:12px;opacity:.75;margin-top:4px">食べるとぽっちゃりに。たくさん食べると超ぽっちゃり(おそくなる)</div>`;
+ $("misList").innerHTML=MISSIONS.map((m,i)=>`<div class="ms ${mDone[i]?"done":""}">${mDone[i]?"✔":"・"} ${m.t} (${Math.min(stats[m.k],m.n)}/${m.n})</div>`).join("")}
+function addText(txt,x,y,c="#fff",life=1){texts.push({txt,x,y,c,life})}
+// ---- network ----
+const others={};let net="オフライン";const bc=("BroadcastChannel"in window)?new BroadcastChannel("slime-proto-v2"):null;let mq=null;const TOPIC="slime-online-proto-22286/v2/state";
+function sendNet(o){bc&&bc.postMessage(o);if(mq&&mq.connected)mq.publish(TOPIC,JSON.stringify(o))}
+function onMsg(o){if(!o||o.id===myId)return;if(o.chit!=null){if(cur.id===0&&o.area===0&&areaHost(0)){const c=areas[0].cats[o.chit];if(c&&!c.dead&&!c.remote){c.hp--;c.hit=.4;c.st="rest";c.t=.8;if(c.hp<=0){c.dead=1;c.resp=18}}}return}if(o.cs&&o.area===0&&o.id<myId){csIn=o.cs;csT=performance.now()}if(o.bhit){if(B&&!B.remote&&!B.dead&&cur.id===2&&B.hit<=0){B.hp--;B.hit=.4;{const a=others[o.id];if(a){B.agg={x:a.rx??a.x,y:a.ry??a.y,t:2};B.st="aim";B.t=.25}}if(B.hp<=0){B.dead=1;toast("中ボスをたおした！");SND.defeat()}}return}if(o.bs&&o.area===2&&o.id<myId){bsIn=o.bs;bsT=performance.now()}if(o.bye){delete others[o.id];return}const r=others[o.id]||(others[o.id]={x:o.x,y:o.y,anim:0,blink:2});if(o.atk&&!r.atk&&r.area===cur.id)atkFx(r,o.hue);Object.assign(r,o,{seen:performance.now()});if(o.emote){r.emote=o.emote;r.et=2}}
+if(bc)bc.onmessage=e=>onMsg(e.data);
+const BROKERS=["wss://broker.emqx.io:8084/mqtt","wss://broker.hivemq.com:8884/mqtt","wss://test.mosquitto.org:8081/mqtt"];let bi=0;
+function netInit(){if(!window.mqtt){net=bc?"同じブラウザのみ":"オフライン";return}let ok=false;try{mq=mqtt.connect(BROKERS[bi],{clientId:"sl_"+myId+bi,reconnectPeriod:0,connectTimeout:7000,clean:true})}catch(e){return}
+ mq.on("connect",()=>{ok=true;net="オンライン(公開MQTT)";mq.subscribe(TOPIC)});mq.on("error",()=>{});
+ mq.on("close",()=>{net=bc?"同じブラウザのみ (再接続中)":"オフライン";const m=mq;mq=null;try{m.end(true)}catch(e){}if(!ok)bi=(bi+1)%BROKERS.length;setTimeout(netInit,ok?2000:4000)});
+ mq.on("message",(t,b)=>{try{onMsg(JSON.parse(b.toString()))}catch(e){}})}
+let sendT=0;function netTick(dt){sendT-=dt;if(sendT>0)return;sendT=.12;const o={id:myId,name:myName,hue:myHue,lash:myLash,atk:P.dash>0?1:0,x:Math.round(P.x),y:Math.round(P.y),d8:P.d8,moving:P.moving,weight:+P.weight.toFixed(2),area:cur.id,emote:emoteMine};if(cur.id===0&&areaHost(0)&&(++csTick%2===0))o.cs=areas[0].cats.map(c=>[catParts(c).map(q=>[Math.round(q.x),Math.round(q.y)]),+c.ang.toFixed(2),c.hp,c.dead?1:0,Math.max(0,CST.indexOf(c.st))]);if(cur.id===2&&B&&!B.remote&&bossHost())o.bs={p:catParts(B).map(q=>[Math.round(q.x),Math.round(q.y)]),a:+B.ang.toFixed(2),hp:B.hp,d:B.dead,st:B.st};emoteMine=null;sendNet(o);
+ const now=performance.now();for(const k in others)if(now-others[k].seen>6000)delete others[k]}
+addEventListener("pagehide",()=>{const o={id:myId,bye:1};bc&&bc.postMessage(o);mq&&mq.connected&&mq.publish(TOPIC,JSON.stringify(o))});
+// ---- スラアタック particles (procedural pixel sprites: sparkle + droplet) ----
+let atkP=[];
+function varCol(hue){if(!hue)return"rgb(192,143,253)";const[h,sa,l]=rgb2hsl(192,143,253);const[r,g,b]=hsl2rgb(h+hue,sa*.78,l+(1-l)*.14);return`rgb(${r|0},${g|0},${b|0})`}
+function atkFx(ent,hue){const c=varCol(hue).match(/\d+/g).map(Number);atkP=atkP.filter(q=>q.ent!==ent);atkP.push({ent,t:0,dur:.5,c})}
+const glowC={};function glowImg(c){const k=c.join();if(glowC[k])return glowC[k];const W=40,H=34,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d"),id=g.createImageData(W,H);
+ const w=[(c[0]+255*2)/3|0,(c[1]+255*2)/3|0,(c[2]+255*2)/3|0];
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const dx=(x+.5-W/2)/(W/2),dy=(y+.5-H/2)/(H/2),d=Math.sqrt(dx*dx+dy*dy);if(d>=1)continue;
+  const a=Math.round((1-d)**1.4*4)/4;if(a<=0)continue;const o=(y*W+x)*4,m=d<.45?1:0;id.data[o]=m?255:w[0];id.data[o+1]=m?255:w[1];id.data[o+2]=m?255:w[2];id.data[o+3]=a*200}
+ g.putImageData(id,0,0);return glowC[k]=cv}
+function drawParts(dt){for(const q of atkP){q.t+=dt;const e=q.ent,ex=e.rx??e.x,ey=e.ry??e.y,u=q.t/q.dur;
+ const env=Math.min(1,u/.2)*Math.min(1,(1-u)/.35),pul=1+.08*Math.sin(q.t*22),im=glowImg(q.c);
+ const w=Math.round(im.width*pul),h=Math.round(im.height*pul),x=Math.round(px(ex)-cam.x-w/2),y=Math.round(px(ey)-cam.y-9-h/2);
+ ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalCompositeOperation="lighter";ctx.globalAlpha=Math.max(0,env)*.85;ctx.drawImage(im,x,y,w,h);ctx.restore()}
+ atkP=atkP.filter(q=>q.t<q.dur)}
+// ---- drawing ----
+let cam={x:0,y:0},camF={x:0,y:0,snap:1},T=0,lastDt=0;const px=v=>Math.round(v*SC)/SC;
+function slimeKey(e){const st=stageOf(e.weight),dir=["right","right","front","left","left","left","back","right"][e.d8??2];
+ const lsh=(e===P?myLash:e.lash!==false);const sf=dir==="front"?(lsh?"_l":""):(dir==="right"||dir==="left")?((e===P?myLash:e.lash!==false)?"":"_nl")+(e.blink<0?"_b":""):"";
+ if(e.moving){const k=`crawl_${st}_${dir}${sf}`,im=IMG[k];const n=im.width/24;return{k,sx:(Math.floor(e.anim)%n)*24}}
+ if(dir==="front")return{k:`idle_${st}_${e.blink<0?2:1}${sf}`,sx:0};
+ if(dir==="back")return st==="plump"?{k:"crawl_plump_back",sx:0}:{k:"back_"+st,sx:0};
+ return{k:`crawl_${st}_${dir}${sf}`,sx:0}}
+function drawSlime(e,hue,alpha,name,extra){const{k,sx}=slimeKey(e),im=slimeImg(k,hue);const x=(px(e.x)-cam.x-12),y=(px(e.y)-cam.y-20);
+ ctx.globalAlpha=alpha*.35;ctx.fillStyle="#000";ctx.beginPath();ctx.ellipse(x+12,y+21,8+stageOf(e.weight).length/4,2.5,0,0,7);ctx.fill();
+ ctx.globalAlpha=alpha;ctx.drawImage(im,sx,0,24,24,x,y,24,24);ctx.globalAlpha=1;
+ label(name,x+12,y-3,extra);if(e.emote&&e.et>0){bubble(e.emote,x+12,y-12)}}
+function label(s,x,y,c){ctx.font="bold 7px sans-serif";ctx.textAlign="center";ctx.fillStyle="#000";ctx.fillText(s,x+.5,y+.5);ctx.fillStyle=c||"#fff";ctx.fillText(s,x,y)}
+function bubble(s,x,y){ctx.font="7px sans-serif";const w=ctx.measureText(s).width+6;ctx.fillStyle="#fff";ctx.fillRect(Math.round(x-w/2),y-9,Math.round(w),10);ctx.fillStyle="#333";ctx.textAlign="center";ctx.fillText(s,x,y-1)}
+const CATV={0:["side",0],1:["fdiag",0],2:["",0],3:["fdiag",1],4:["side",1],5:["bdiag",1],6:["back",0],7:["bdiag",0]};
+function drawCat(c){if(c.dead)return;const a=c.ang;const o8=((Math.round(a/(Math.PI/4))%8)+8)%8;const[v,flip]=CATV[o8];const suf=v?"_"+v:"";const mood=c.st==="aim"||c.st==="charge"?"aggro":"calm";const parts=catParts(c);const N0=["head"+suf+"_"+mood,"segment_a"+suf,"segment_b"+suf,"tail"+suf],S0=["shadow_head","shadow_segment_a","shadow_segment_b","shadow_tail"],KD=c.kinds||[0,1,2,3],names=KD.map(i=>N0[i]),sh=KD.map(i=>S0[i]),PF=c.pf||"cat_";
+ const bob=Math.floor(c.bob)%2;
+ for(const p of parts)ctx.drawImage(IMG[PF+sh[p.k]],(px(p.x)-cam.x-12),(px(p.y)-cam.y-16));
+ const ord=parts.slice().sort((A,B)=>A.y-B.y||(o8>=5&&o8<=7?A.k-B.k:B.k-A.k));
+ for(const p of ord){const im=IMG[PF+names[p.k]+((p.k+bob)%2?"_bob":"")]||IMG[PF+names[p.k]];const x=(px(p.x)-cam.x-12),y=(px(p.y)-cam.y-16);
+  if(c.hit>0&&Math.floor(c.hit*20)%2)ctx.globalAlpha=.4;if(flip){ctx.save();ctx.translate(x+24,y);ctx.scale(-1,1);ctx.drawImage(im,0,0);ctx.restore()}else ctx.drawImage(im,x,y);ctx.globalAlpha=1}}
+function draw(){ctx.setTransform(SC,0,0,SC,0,0);ctx.imageSmoothingEnabled=false;window.__dbg&&0;
+ {const tx=AW*TS<VW?(AW*TS-VW)/2:clamp(P.x-VW/2,0,AW*TS-VW),ty=AH*TS<VH?(AH*TS-VH)/2:clamp(P.y-VH/2,0,AH*TS-VH);
+  if(camF.snap||Math.hypot(tx-camF.x,ty-camF.y)>200){camF.x=tx;camF.y=ty;camF.snap=0}else{const k=1-Math.exp(-lastDt*10);camF.x+=(tx-camF.x)*k;camF.y+=(ty-camF.y)*k}
+  cam.x=px(camF.x);cam.y=px(camF.y)} // camera snapped to SCREEN pixels (1/SC world px), sprites use the same px()
+ ctx.fillStyle="#111";ctx.fillRect(0,0,VW,VH);const tile=IMG[cur.tile];
+ for(let ty=Math.max(0,Math.floor(cam.y/TS));ty<Math.min(AH,Math.ceil((cam.y+VH)/TS));ty++)for(let tx=Math.max(0,Math.floor(cam.x/TS));tx<Math.min(AW,Math.ceil((cam.x+VW)/TS));tx++)ctx.drawImage(tile,tx*TS-cam.x,ty*TS-cam.y);
+ for(const d of cur.deco)ctx.drawImage(IMG[d.img],d.x-cam.x,d.y-cam.y);
+ const fr=Math.floor(T/.3);for(const f of cur.flowers){const im=IMG[`t_flower_clump_${f.big?"L":"S"}_${(fr+f.ph)%4+1}`];ctx.drawImage(im,f.x-cam.x-im.width/2,f.y-cam.y-im.height/2)}
+ for(const e of cur.exits){ctx.fillStyle="rgba(255,240,150,"+(.25+.15*Math.sin(T*4))+")";ctx.fillRect(e.x-cam.x,e.y-cam.y,e.w,e.h);label(e.label,e.x-cam.x+(e.x>20?-14:28),e.y-cam.y-4,"#ffe27a")}
+ const ents=[],gfr=Math.floor(T/.2);
+ for(const s of cur.stumps){ents.push({y:s.y+9,f:()=>ctx.drawImage(IMG[s.img],s.x-24-cam.x,s.y-30-cam.y)});if(s.mush){const m=mushPos(s);ents.push({y:m.y+1,f:()=>ctx.drawImage(IMG[s.kind],m.x-12-cam.x,m.y-20-cam.y)})}}
+ for(const t of cur.tufts||[]){if(t.x<cam.x-24||t.x>cam.x+VW+24||t.y<cam.y-8||t.y>cam.y+VH+30)continue;ents.push({y:t.y-3,f:()=>ctx.drawImage(IMG["ug_"+((gfr+t.ph)&3)],t.x-12-cam.x,t.y-21-cam.y)})}
+ for(const r of cur.rocks){const im=IMG[r.img];if(r.img==="rock_S"){ctx.drawImage(im,r.x-im.width/2-cam.x,r.y-im.height+10-cam.y);continue}ents.push({y:r.y-1,f:()=>ctx.drawImage(im,r.x-im.width/2-cam.x,r.y-im.height+10-cam.y)})}
+ for(const c of cur.cats)if(!c.dead)ents.push({y:c.y+6,f:()=>drawCat(c)});
+ if(cur.id===2&&B&&!B.dead){const hp=catParts(B)[0];ents.push({y:hp.y+6,f:()=>drawCat(B)})}
+ if(sani.area===cur.id)ents.push({y:sani.y+1,f:()=>drawSlime(sani,sani.hue,OTHER_A,"サニ (BOT)","#ffd0f0")});
+ for(const k in others){const o=others[k];if(o.area!==cur.id)continue;o.rx=o.rx??o.x;o.ry=o.ry??o.y;ents.push({y:o.ry+1,f:()=>drawSlime({...o,x:o.rx,y:o.ry},o.hue,OTHER_A,o.name,"#cfe8ff")})}
+ if(!(P.faint>0&&Math.floor(T*8)%2)&&!(P.inv>0&&Math.floor(T*12)%2))ents.push({y:P.y+1,f:()=>{if(P.faint>0){const x=(px(P.x)-cam.x-12),y=(px(P.y)-cam.y-20);ctx.drawImage(slimeImg("hurt",myHue),x,y);label(myName,x+12,y-3,"#fff")}else drawSlime(P,myHue,1,myName)}});
+ ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());drawParts(1/60);
+ if(cur.id===2&&B&&!B.dead){const bw=Math.min(180,VW-60),bx=(VW-bw)/2,by=30;ctx.fillStyle="rgba(0,0,0,.6)";ctx.fillRect(bx-2,by-2,bw+4,10);ctx.fillStyle="#511";ctx.fillRect(bx,by,bw,6);ctx.fillStyle=B.hit>0?"#fff":"#e33";ctx.fillRect(bx,by,bw*Math.max(0,B.hp)/B.max,6);ctx.font="bold 7px sans-serif";ctx.textAlign="center";ctx.fillStyle="#fff";ctx.fillText("中ボス：大イモムシ  "+Math.max(0,B.hp)+"/"+B.max,VW/2,by-4);ctx.textAlign="left"}
+ for(const t of texts){ctx.globalAlpha=Math.min(1,t.life*2);label(t.txt,(px(t.x)-cam.x),(px(t.y)-cam.y),t.c)}ctx.globalAlpha=1;
+ const st=stageOf(P.weight);$("hud").innerHTML=`${myName} | ${cur.name}<br>HP ${hImg(HEART_F).repeat(Math.max(0,P.hp))}${hImg(HEART_E).repeat(5-Math.max(0,P.hp))}<br>体重 ${P.weight.toFixed(1)} (${{normal:"ふつう",plump:"ぽっちゃり",superplump:"超ぽっちゃり"}[st]})<br>キノコ ${inv.mush}<br>通信: ${net} / 他 ${Object.keys(others).length}人`}
+function cdRing(){const c=P.cd/ACD[stageOf(P.weight)];$("atkCd").style.background=c>0?`conic-gradient(rgba(0,0,0,.6) ${c*360}deg, transparent 0deg)`:"none"}
+let last=0;function frame(now){const dt=Math.min(.05,(now-last)/1000||0);last=now;T+=dt;lastDt=dt;if(started){update(dt);for(const k in others){const o=others[k];o.rx=(o.rx??o.x)+(o.x-(o.rx??o.x))*Math.min(1,dt*10);o.ry=(o.ry??o.y)+(o.y-(o.ry??o.y))*Math.min(1,dt*10);if(o.moving)o.anim=(o.anim||0)+dt*10;o.blink=(o.blink??2)-dt;if(o.blink<-.15)o.blink=rnd(2,4);if(o.et>0)o.et-=dt}netTick(dt);draw();cdRing()}requestAnimationFrame(frame)}
+// ---- start ----
+function custom(k,url,fb){return new Promise(r=>{IMG[k]=IMG[fb];if(!url)return r();const i=new Image();i.onload=()=>{IMG[k]=i;r()};i.onerror=r;i.src=url})}
+loadAll().then(()=>Promise.all([custom("grass_tile",TILE_GRASS,"t_grass_base"),custom("dirt_tile",TILE_DIRT,"t_dirt")])).then(()=>{areas=[makeArea(0),makeArea(1),makeArea(2)];cur=areas[0];P=newPlayer();
+ myHue=+(localStorage.slimeHue||0);myName=localStorage.slimeName||"";$("nameIn").value=myName;
+ const sw=$("swatches");COLORS.forEach(c=>{const k=document.createElement("canvas");k.width=k.height=24;k.getContext("2d").drawImage(slimeImg("idle_normal_1",c.h),0,0);k.title=c.n;if(c.h===myHue)k.className="sel";k.onclick=()=>{SND.select();myHue=c.h;[...sw.children].forEach(x=>x.className="");k.className="sel"};sw.appendChild(k)});
+ myLash=localStorage.slimeLash!=="0";const ls=$("lashSw");[[true,"まつ毛あり"],[false,"まつ毛なし"]].forEach(([v,n])=>{const k=document.createElement("canvas");k.width=k.height=24;k.title=n;const dr=()=>{const g=k.getContext("2d");g.clearRect(0,0,24,24);g.drawImage(slimeImg("crawl_normal_right"+(v?"":"_nl"),myHue),0,0,24,24,0,0,24,24)};dr();k._dr=dr;if(v===myLash)k.className="sel";k.onclick=()=>{SND.select();myLash=v;[...ls.children].forEach(x=>x.className="");k.className="sel"};ls.appendChild(k)});
+ {const pc=$("selPrev").getContext("2d");let f=0;const tick=()=>{if(started)return;pc.clearRect(0,0,24,24);pc.drawImage(slimeImg("sel_idle"+(myLash?"":"_nl"),myHue),f*24,0,24,24,0,0,24,24);const d=f?250:400;f^=1;setTimeout(tick,d)};tick()}
+ sw.addEventListener("click",()=>[...ls.children].forEach(c=>c._dr()));
+ $("bStart").onclick=()=>{auInit();SND.start();myName=($("nameIn").value.trim()||"スライム").slice(0,10);localStorage.slimeName=myName;localStorage.slimeHue=myHue;localStorage.slimeLash=myLash?"1":"0";$("start").style.display="none";started=true;renderPanels();netInit();toast("ようこそ！ 切り株のキノコを集めよう")};
+ requestAnimationFrame(frame)});
+{const mb=document.getElementById("muteB");const up=()=>mb.textContent=MUTE?"🔇":"🔊";up();mb.onclick=e=>{e.stopPropagation();MUTE=!MUTE;localStorage.slimeMute=MUTE?"1":"0";up();auInit();SND.select()}}
+</script></body></html>
